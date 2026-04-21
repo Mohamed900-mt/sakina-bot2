@@ -1,5 +1,5 @@
+res.status(200).send("OK");
 const fetch = require('node-fetch');
-
 module.exports = async (req, res) => {
   // للرد على أي طلب GET لضمان استمرار عمل البوت
   if (req.method === "GET") {
