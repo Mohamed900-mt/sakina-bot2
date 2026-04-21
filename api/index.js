@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
   if (req.method === "POST") res.status(200).send("OK");
 
   const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const API = `https://api.telegram.org/bot${TOKEN}`;
+  const API = `https://api.telegram.org/bot${8313086912:AAGh21z8K7Wnh9oDShjKG7KS_tP_wy_0gF0}`;
   const CHANNEL_ID = "@sakina_6"; 
   const CHANNEL_URL = "https://t.me/sakina_6";
 
