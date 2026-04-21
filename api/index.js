@@ -1,11 +1,21 @@
+const fetch = require('node-fetch');
+
 module.exports = async (req, res) => {
-  if (req.method === "GET") return res.status(200).send("Sakina Bot is Online! 🚀");
-  if (req.method === "POST") res.status(200).send("OK");
-  else return;
+  // للـ UptimeRobot عشان يقرأ UP
+  if (req.method === "GET") {
+    return res.status(200).send("UP"); 
+  }
+
+  // رد سريع لتليجرام عشان يوقف الـ 500 والبطء
+  if (req.method === "POST") {
+    res.status(200).send("OK");
+  } else {
+    return;
+  }
 
   try {
     const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const API = `https://api.telegram.org/bot${8313086912:AAGh21z8K7Wnh9oDShjKG7KS_tP_wy_0gF0}`;
+    const API = `https://api.telegram.org/bot${TOKEN}`;
     const CHANNEL_ID = "@sakina_6"; 
     const CHANNEL_URL = "https://t.me/sakina_6";
 
@@ -34,7 +44,6 @@ module.exports = async (req, res) => {
       } catch { return true; }
     }
 
-    // --- البيانات الكاملة بدون نقص ---
     const ahadith = [
       '1. قال محمد بن عبد الله:\n"إنما الأعمال بالنيات"\n\n*التفسير:*\nأي عمل بتعمله قيمته عند ربنا على حسب نيتك.',
       '2. قال محمد بن عبد الله:\n"الدين النصيحة"\n\n*التفسير:*\nالدين كله قائم على الصدق والإخلاص.',
@@ -54,7 +63,7 @@ module.exports = async (req, res) => {
       '3. "اللهم اغفر لي ذنبي كله دقه وجله"\n\n*التفسير:*\nبتطلب مغفرة كل الذنوب.',
       '4. "اللهم ارزقني رزقاً طيباً مباركاً فيه"\n\n*التفسير:*\nرزق حلال وفيه بركة.',
       '5. "اللهم إني أعوذ بك من الهم والحزن"\n\n*التفسير:*\nبتستعيذ من الضيق النفسي.',
-      '6. "اللهم أصلح لي ديني ودنيااي"\n\n*التفسير:*\nبتطلب إصلاح حياتك كلها.',
+      '6. "اللهم أصلح لي ديني ودنياي"\n\n*التفسير:*\nبتطلب إصلاح حياتك كلها.',
       '7. "اللهم تقبل مني إنك أنت السميع العليم"\n\n*التفسير:*\nربنا يقبل أعمالك وعبادتك.',
       '8. "اللهم اجعلني من التوابين واجعلني من المتطهرين"\n\n*التفسير:*\nتبقى دايماً تائباً ومتطهراً.',
       '9. "اللهم إني أسألك الجنة وأعوذ بك من النار"\n\n*التفسير:*\nأبسط وأهم دعاء.',
@@ -96,9 +105,8 @@ module.exports = async (req, res) => {
       ]
     };
 
-    // --- تنفيذ العمليات ---
-    const isSubscribed = await checkSub(userId);
-    if (!isSubscribed) {
+    const isSub = await checkSub(userId);
+    if (!isSub) {
       return await tg("sendMessage", { 
         chat_id: chatId, 
         text: "⚠️ عذراً يا أخي، يجب عليك الاشتراك في قناة البوت أولاً لتتمكن من استخدامه.", 
