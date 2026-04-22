@@ -1,39 +1,37 @@
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
-  // للـ UptimeRobot عشان يقرأ UP
+  // للـ UptimeRobot عشان يقرأ UP ويخلي السيرفر صاحي
   if (req.method === "GET") {
     return res.status(200).send("UP"); 
   }
 
-  // رد سريع لتليجرام عشان يوقف الـ 500 والبطء
-  if (req.method === "POST") {
-    res.status(200).send("OK");
-  } else {
-    return;
-  }
+  // الجزء ده مهم: بنعرف المتغيرات الأساسية
+  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const API = `https://api.telegram.org/bot${TOKEN}`;
+  const CHANNEL_ID = "@sakina_6"; 
+  const CHANNEL_URL = "https://t.me/sakina_6";
 
   try {
-    const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const API = `https://api.telegram.org/bot${TOKEN}`;
-    const CHANNEL_ID = "@sakina_6"; 
-    const CHANNEL_URL = "https://t.me/sakina_6";
-
     const u = req.body;
-    if (!u || (!u.message && !u.callback_query)) return;
+    if (!u || (!u.message && !u.callback_query)) {
+      return res.status(200).send("NO DATA");
+    }
 
     const userId = u.message?.from.id || u.callback_query?.from.id;
     const chatId = u.message?.chat.id || u.callback_query?.message.chat.id;
     const msgId = u.callback_query?.message.message_id;
 
+    // وظيفة الإرسال مع await حقيقي عشان السيرفر ما يهربش
     async function tg(method, body) {
       try {
-        await fetch(`${API}/${method}`, {
+        const response = await fetch(`${API}/${method}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)
         });
-      } catch (e) { console.error(e); }
+        return await response.json();
+      } catch (e) { console.error("TG Error:", e); }
     }
 
     async function checkSub(id) {
@@ -44,6 +42,7 @@ module.exports = async (req, res) => {
       } catch { return true; }
     }
 
+    // --- البيانات (الأحاديث والأدعية) ---
     const ahadith = [
       '1. قال محمد بن عبد الله:\n"إنما الأعمال بالنيات"\n\n*التفسير:*\nأي عمل بتعمله قيمته عند ربنا على حسب نيتك.',
       '2. قال محمد بن عبد الله:\n"الدين النصيحة"\n\n*التفسير:*\nالدين كله قائم على الصدق والإخلاص.',
@@ -105,17 +104,20 @@ module.exports = async (req, res) => {
       ]
     };
 
+    // التحقق من الاشتراك
     const isSub = await checkSub(userId);
     if (!isSub) {
-      return await tg("sendMessage", { 
+      await tg("sendMessage", { 
         chat_id: chatId, 
         text: "⚠️ عذراً يا أخي، يجب عليك الاشتراك في قناة البوت أولاً لتتمكن من استخدامه.", 
         reply_markup: { inline_keyboard: [[{ text: "✅ اشترك في القناة من هنا", url: CHANNEL_URL }], [{ text: "تم الاشتراك ✅ (تفعيل)", callback_data: "start" }]] } 
       });
+      return res.status(200).send("OK");
     }
 
+    // الأوامر الأساسية
     if (u.message?.text === "/start" || u.callback_query?.data === "start") {
-      return await tg("sendMessage", { chat_id: chatId, text: "مرحباً بك في بوت سكينة 🌙\nاختر من القائمة بالأسفل:", reply_markup: mainMenu });
+      await tg("sendMessage", { chat_id: chatId, text: "مرحباً بك في بوت سكينة 🌙\nاختر من القائمة بالأسفل:", reply_markup: mainMenu });
     }
 
     if (u.callback_query) {
@@ -143,5 +145,13 @@ module.exports = async (req, res) => {
       }
       await tg("answerCallbackQuery", { callback_query_id: u.callback_query.id });
     }
-  } catch (err) { console.error(err); }
+
+    // ده التعديل الجوهري: بنرد "OK" بعد ما كل الـ await يخلص
+    return res.status(200).send("OK");
+
+  } catch (err) {
+    console.error(err);
+    // حتى لو فيه غلط بنرد OK عشان تليجرام ما يفضلش يبعت نفس الرسالة ويعلق البوت
+    if (!res.headersSent) res.status(200).send("OK");
+  }
 };
