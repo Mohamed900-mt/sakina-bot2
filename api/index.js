@@ -1,157 +1,207 @@
-const fetch = require('node-fetch');
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>موقع سكينة - طمأنينة لقلبك</title>
+    <style>
+        :root { --main: #1b4d3e; --accent: #c5a059; --bg: #f8f5f0; --white: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; text-align: center; color: #333; }
+        
+        /* الهيدر */
+        .header { background: var(--main); color: white; padding: 20px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .back-btn { float: right; background: var(--accent); border: none; color: white; padding: 6px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; display: none; }
 
-module.exports = async (req, res) => {
-  // للـ UptimeRobot عشان يقرأ UP ويخلي السيرفر صاحي
-  if (req.method === "GET") {
-    return res.status(200).send("UP"); 
-  }
+        .container { padding: 20px; max-width: 600px; margin: auto; }
+        
+        /* القائمة الرئيسية */
+        .card { background: var(--white); border-radius: 15px; padding: 20px; margin: 15px 0; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: 0.3s; border-right: 8px solid var(--accent); }
+        .card:hover { transform: translateY(-3px); }
+        .card h3 { margin: 0; color: var(--main); }
 
-  // الجزء ده مهم: بنعرف المتغيرات الأساسية
-  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const API = `https://api.telegram.org/bot${8313086912:AAGh21z8K7Wnh9oDShjKG7KS_tP_wy_0gF0}`;
-  const CHANNEL_ID = "@sakina_6"; 
-  const CHANNEL_URL = "https://t.me/sakina_6";
+        /* واجهات المحتوى */
+        .view-container { display: none; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-  try {
-    const u = req.body;
-    if (!u || (!u.message && !u.callback_query)) {
-      return res.status(200).send("NO DATA");
-    }
+        .content-box { background: var(--white); padding: 25px; border-radius: 20px; font-size: 24px; line-height: 1.8; margin: 15px 0; min-height: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; }
+        
+        select { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--main); font-size: 18px; margin-bottom: 15px; background: white; }
+        
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn { background: var(--main); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-size: 16px; flex: 1; font-weight: bold; }
+        .btn-count { background: var(--accent); font-size: 20px; }
 
-    const userId = u.message?.from.id || u.callback_query?.from.id;
-    const chatId = u.message?.chat.id || u.callback_query?.message.chat.id;
-    const msgId = u.callback_query?.message.message_id;
+        .counter-badge { background: var(--accent); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
 
-    // وظيفة الإرسال مع await حقيقي عشان السيرفر ما يهربش
-    async function tg(method, body) {
-      try {
-        const response = await fetch(`${API}/${method}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        });
-        return await response.json();
-      } catch (e) { console.error("TG Error:", e); }
-    }
+<div class="header">
+    <button id="masterBack" class="back-btn" onclick="showMain()">🏠 الرئيسية</button>
+    <h2 id="top-title">موقع سَكينة</h2>
+</div>
 
-    async function checkSub(id) {
-      try {
-        const r = await fetch(`${API}/getChatMember?chat_id=${CHANNEL_ID}&user_id=${id}`);
-        const d = await r.json();
-        return ["creator", "administrator", "member"].includes(d.result?.status);
-      } catch { return true; }
-    }
+<div class="container">
+    <div id="main-menu">
+        <div class="card" onclick="openQuran()">
+            <h3>📖 المصحف الشريف</h3>
+            <p>قراءة وتدبر آيات الله</p>
+        </div>
+        <div class="card" onclick="openAzkarMenu()">
+            <h3>📿 حصن المسلم (الأذكار)</h3>
+            <p>صباح، مساء، صلاة، ونوم</p>
+        </div>
+        <div class="card" onclick="window.open('https://surah.com', '_blank')">
+            <h3>🎧 الاستماع للقرآن</h3>
+            <p>بأصوات نخبة من القراء</p>
+        </div>
+    </div>
 
-    // --- البيانات (الأحاديث والأدعية) ---
-    const ahadith = [
-      '1. قال محمد بن عبد الله:\n"إنما الأعمال بالنيات"\n\n*التفسير:*\nأي عمل بتعمله قيمته عند ربنا على حسب نيتك.',
-      '2. قال محمد بن عبد الله:\n"الدين النصيحة"\n\n*التفسير:*\nالدين كله قائم على الصدق والإخلاص.',
-      '3. قال محمد بن عبد الله:\n"لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه"\n\n*التفسير:*\nالإيمان الكامل إنك تتمنى الخير لغيرك.',
-      '4. قال محمد بن عبد الله:\n"المسلم من سلم المسلمون من لسانه ويده"\n\n*التفسير:*\nالمسلم الحقيقي ما بيأذيش غيره.',
-      '5. قال محمد بن عبد الله:\n"تبسمك في وجه أخيك صدقة"\n\n*التفسير:*\nحتى الابتسامة عمل خير.',
-      '6. قال محمد بن عبد الله:\n"الكلمة الطيبة صدقة"\n\n*التفسير:*\nأي كلمة حلوة بتقولها صدقة.',
-      '7. قال محمد بن عبد الله:\n"من كان يؤمن بالله واليوم الآخر فليقل خيراً أو ليصمت"\n\n*التفسير:*\nلو مش هتقول كلام كويس، اسكت.',
-      '8. قال محمد بن عبد الله:\n"خير الناس أنفعهم للناس"\n\n*التفسير:*\nأفضل الناس اللي بيفيد غيره.',
-      '9. قال محمد بن عبد الله:\n"الراحمون يرحمهم الرحمن"\n\n*التفسير:*\nلو بتتعامل برحمة، ربنا يرحمك.',
-      '10. قال محمد بن عبد الله:\n"اتق الله حيثما كنت"\n\n*التفسير:*\nخلي ربنا في بالك في كل وقت ومكان.'
-    ];
+    <div id="azkar-menu" class="view-container">
+        <div class="card" onclick="startAzkar('morning')"><h3>☀️ أذكار الصباح</h3></div>
+        <div class="card" onclick="startAzkar('evening')"><h3>🌙 أذكار المساء</h3></div>
+        <div class="card" onclick="startAzkar('prayer')"><h3>🕌 أذكار بعد الصلاة</h3></div>
+        <div class="card" onclick="startAzkar('sleep')"><h3>💤 أذكار النوم</h3></div>
+        <div class="card" onclick="startAzkar('wake')"><h3>🔔 أذكار الاستيقاظ</h3></div>
+    </div>
 
-    const ad3eya = [
-      '1. "اللهم اهدني فيمن هديت"\n\n*التفسير:*\nبتطلب من ربنا يهديك للطريق الصح.',
-      '2. "اللهم إني أسألك العفو والعافية"\n\n*التفسير:*\nبتسأل ربنا يسامحك ويحفظك.',
-      '3. "اللهم اغفر لي ذنبي كله دقه وجله"\n\n*التفسير:*\nبتطلب مغفرة كل الذنوب.',
-      '4. "اللهم ارزقني رزقاً طيباً مباركاً فيه"\n\n*التفسير:*\nرزق حلال وفيه بركة.',
-      '5. "اللهم إني أعوذ بك من الهم والحزن"\n\n*التفسير:*\nبتستعيذ من الضيق النفسي.',
-      '6. "اللهم أصلح لي ديني ودنياي"\n\n*التفسير:*\nبتطلب إصلاح حياتك كلها.',
-      '7. "اللهم تقبل مني إنك أنت السميع العليم"\n\n*التفسير:*\nربنا يقبل أعمالك وعبادتك.',
-      '8. "اللهم اجعلني من التوابين واجعلني من المتطهرين"\n\n*التفسير:*\nتبقى دايماً تائباً ومتطهراً.',
-      '9. "اللهم إني أسألك الجنة وأعوذ بك من النار"\n\n*التفسير:*\nأبسط وأهم دعاء.',
-      '10. "اللهم ثبت قلبي على دينك"\n\n*التفسير:*\nثابت على الإيمان مهما حصل.'
-    ];
+    <div id="quran-view" class="view-container">
+        <select id="surahSelect" onchange="fetchSurah(this.value)"></select>
+        <div id="quran-text" class="content-box">جاري فتح المصحف...</div>
+        <div class="controls">
+            <button class="btn" onclick="moveSurah(1)">السورة التالية</button>
+            <button class="btn" onclick="moveSurah(-1)">السورة السابقة</button>
+        </div>
+    </div>
 
-    const tafseer = [
-      "1. ﴿إِنَّ مَعَ الْعُسْرِ يُسْرًا﴾\n\n*التفسير:*\nأي ضيق معاه فرج قريب.",
-      "2. ﴿وَاللَّهُ غَفُورٌ رَّحِيمٌ﴾\n\n*التفسير:*\nربنا بيسامح ويرحم مهما كانت الذنوب.",
-      "3. ﴿وَقُل رَّبِّ زِدْنِي عِلْمًا﴾\n\n*التفسير:*\nدايماً اطلب العلم.",
-      "4. ﴿إِنَّ اللَّهَ مَعَ الصَّابِرِينَ﴾\n\n*التفسير:*\nاللي يصبر ربنا معاه.",
-      "5. ﴿وَلَا تَيْأَسُوا مِن رَّوحِ اللَّهِ﴾\n\n*التفسير:*\nممنوع تفقد الأمل في رحمة ربنا.",
-      "6. ﴿فَاذْكُرُونِي أَذْكُرْكُمْ﴾\n\n*التفسير:*\nاذكر ربنا يذكرك برحمته.",
-      "7. ﴿إِنَّ اللَّهَ لَا يُضِيعُ أَجْرَ الْمُحْسِنِينَ﴾\n\n*التفسير:*\nأي خير بتعمله مش هيضيع.",
-      "8. ﴿وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ﴾\n\n*التفسير:*\nربنا قريب منك في كل مكان.",
-      "9. ﴿وَعَسَىٰ أَن تَكْرَهُوا شَيْئًا وَهُوَ خَيْرٌ لَّكُمْ﴾\n\n*التفسير:*\nمش كل حاجة تضايقك شر.",
-      "10. ﴿إِنَّ رَبِّي قَرِيبٌ مُّجِيبٌ﴾\n\n*التفسير:*\nربنا قريب وبيسمع دعاءك."
-    ];
+    <div id="azkar-active" class="view-container">
+        <div class="counter-badge" id="zikr-target"></div>
+        <div id="azkar-text" class="content-box" onclick="countZikr()"></div>
+        <div class="counter" style="font-size: 50px; color: var(--accent); font-weight: bold;" id="zikr-count">0</div>
+        <p style="font-size: 14px; color: #888;">اضغط على النص للتسبيح</p>
+        <div class="controls">
+            <button class="btn" style="background:#2ecc71" onclick="nextZikr()">الذكر التالي</button>
+        </div>
+    </div>
+</div>
 
-    const morningText = "☀️ *أذكار الصباح:*\n\n• آية الكرسي والمعوذات\n• سيد الاستغفار\n• أصبحنا وأصبح الملك لله\n• بسم الله الذي لا يضر مع اسمه شيء (3 مرات)\n• رضيت بالله رباً (3 مرات)\n• يا حي يا قيوم برحمتك أستغيث\n• سبحان الله وبحمده (100 مرة)\n• الصلاة على النبي (10 مرات)";
-    const eveningText = "🌙 *أذكار المساء:*\n\n• آية الكرسي والمعوذات (3 مرات)\n• سيد الاستغفار\n• أمسينا وأمسى الملك لله\n• بسم الله الذي لا يضر مع اسمه شيء (3 مرات)\n• أعوذ بكلمات الله التامات (3 مرات)\n• سبحان الله وبحمده (100 مرة)\n• الصلاة على النبي (10 مرات)";
-    const sleepText = "😴 *أذكار النوم:*\n\n• المعوذات والنفث (3 مرات)\n• آية الكرسي\n• خواتيم سورة البقرة\n• باسمك ربي وضعت جنبي\n• سبحان الله (33)، الحمد لله (33)، الله أكبر (34)\n• سورة الملك";
-    const prayerText = "🕌 *أذكار بعد الصلاة:*\n\n• أستغفر الله (3 مرات)\n• اللهم أنت السلام ومنك السلام\n• سبحان الله (33)، الحمد لله (33)، الله أكبر (33)\n• آية الكرسي والمعوذات";
-
-    const mainMenu = {
-      inline_keyboard: [
-        [{ text: "✨ أذكار", callback_data: "azkar_menu" }, { text: "🕒 مواقيت الصلاة", callback_data: "times" }],
-        [{ text: "📜 أحاديث", callback_data: "hadith_0" }, { text: "🤲 أدعية", callback_data: "doa_0" }],
-        [{ text: "📖 تفسير آيات", callback_data: "tafseer_0" }],
-        [{ text: "📢 قناة البوت", url: CHANNEL_URL }]
-      ]
+<script>
+    // بيانات الأذكار الشاملة
+    const allAzkar = {
+        morning: [
+            {t: "أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له", c: 1},
+            {t: "آية الكرسي: اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...", c: 1},
+            {t: "سورة الإخلاص والمعوذتين", c: 3},
+            {t: "سبحان الله وبحمده", c: 100}
+        ],
+        evening: [
+            {t: "أمسينا وأمسى الملك لله، والحمد لله", c: 1},
+            {t: "اللهم بك أمسينا، وبك أصبحنا، وبك نحيا، وبك نموت، وإليك المصير", c: 1},
+            {t: "سورة الإخلاص والمعوذتين", c: 3}
+        ],
+        prayer: [
+            {t: "أستغفر الله", c: 3},
+            {t: "سبحان الله", c: 33},
+            {t: "الحمد لله", c: 33},
+            {t: "الله أكبر", c: 33}
+        ],
+        sleep: [
+            {t: "باسمك ربي وضعت جنبي، وبك أرفعه", c: 1},
+            {t: "اللهم قني عذابك يوم تبعث عبادك", c: 3}
+        ],
+        wake: [
+            {t: "الحمد لله الذي أحيانا بعد ما أماتنا وإليه النشور", c: 1}
+        ]
     };
 
-    const azkarMenu = {
-      inline_keyboard: [
-        [{ text: "☀️ صباح", callback_data: "morning" }, { text: "🌙 مساء", callback_data: "evening" }],
-        [{ text: "😴 نوم", callback_data: "sleep" }, { text: "🕌 بعد الصلاة", callback_data: "prayer" }],
-        [{ text: "🔙 رجوع", callback_data: "start" }]
-      ]
-    };
+    let currentSurah = 1;
+    let activeAzkarList = [];
+    let zIndex = 0;
+    let zCount = 0;
 
-    // التحقق من الاشتراك
-    const isSub = await checkSub(userId);
-    if (!isSub) {
-      await tg("sendMessage", { 
-        chat_id: chatId, 
-        text: "⚠️ عذراً يا أخي، يجب عليك الاشتراك في قناة البوت أولاً لتتمكن من استخدامه.", 
-        reply_markup: { inline_keyboard: [[{ text: "✅ اشترك في القناة من هنا", url: CHANNEL_URL }], [{ text: "تم الاشتراك ✅ (تفعيل)", callback_data: "start" }]] } 
-      });
-      return res.status(200).send("OK");
-    }
-
-    // الأوامر الأساسية
-    if (u.message?.text === "/start" || u.callback_query?.data === "start") {
-      await tg("sendMessage", { chat_id: chatId, text: "مرحباً بك في بوت سكينة 🌙\nاختر من القائمة بالأسفل:", reply_markup: mainMenu });
-    }
-
-    if (u.callback_query) {
-      const data = u.callback_query.data;
-      if (data === "azkar_menu") {
-        await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: "اختر نوع الأذكار:", reply_markup: azkarMenu });
-      } else if (data === "morning") {
-        await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: morningText, parse_mode: "Markdown", reply_markup: { inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "azkar_menu" }]] } });
-      } else if (data === "evening") {
-        await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: eveningText, parse_mode: "Markdown", reply_markup: { inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "azkar_menu" }]] } });
-      } else if (data === "sleep") {
-        await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: sleepText, parse_mode: "Markdown", reply_markup: { inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "azkar_menu" }]] } });
-      } else if (data === "prayer") {
-        await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: prayerText, parse_mode: "Markdown", reply_markup: { inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "azkar_menu" }]] } });
-      } else if (data === "times") {
-        await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: "🕋 *مواقيت الصلاة في القاهرة:* \n\nالفجر: 4:00 ص\nالظهر: 11:55 ص\nالعصر: 3:30 م\nالمغرب: 6:20 م\nالعشاء: 7:40 م", parse_mode: "Markdown", reply_markup: { inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "start" }]] } });
-      } else if (data.includes("_")) {
-        const [cat, idxStr] = data.split("_");
-        const idx = parseInt(idxStr);
-        const list = cat === "hadith" ? ahadith : cat === "doa" ? ad3eya : tafseer;
-        if (list) {
-          const nextIdx = (idx + 1) % list.length;
-          await tg("editMessageText", { chat_id: chatId, message_id: msgId, text: list[idx], parse_mode: "Markdown", reply_markup: { inline_keyboard: [[{ text: "➡️ التالي", callback_data: `${cat}_${nextIdx}` }], [{ text: "🔙 رجوع", callback_data: "start" }]] } });
+    // وظائف القرآن
+    function openQuran() {
+        showView('quran-view', 'المصحف الشريف');
+        if(document.getElementById('surahSelect').options.length === 0) {
+            fetch('https://api.alquran.cloud/v1/surah')
+                .then(r => r.json())
+                .then(data => {
+                    const sel = document.getElementById('surahSelect');
+                    data.data.forEach(s => sel.innerHTML += `<option value="${s.number}">${s.name}</option>`);
+                    fetchSurah(1);
+                });
         }
-      }
-      await tg("answerCallbackQuery", { callback_query_id: u.callback_query.id });
     }
 
-    // ده التعديل الجوهري: بنرد "OK" بعد ما كل الـ await يخلص
-    return res.status(200).send("OK");
+    function fetchSurah(num) {
+        currentSurah = parseInt(num);
+        document.getElementById('quran-text').innerText = "جاري عرض السورة...";
+        fetch(`https://api.alquran.cloud/v1/surah/${num}`)
+            .then(r => r.json())
+            .then(data => {
+                let txt = data.data.ayahs.map(a => a.text + ` ﴿${a.numberInSurah}﴾ `).join(' ');
+                document.getElementById('quran-text').innerText = txt;
+                document.getElementById('surahSelect').value = num;
+                document.getElementById('quran-view').scrollTop = 0;
+            });
+    }
 
-  } catch (err) {
-    console.error(err);
-    // حتى لو فيه غلط بنرد OK عشان تليجرام ما يفضلش يبعت نفس الرسالة ويعلق البوت
-    if (!res.headersSent) res.status(200).send("OK");
-  }
-};
+    function moveSurah(step) {
+        let n = currentSurah + step;
+        if(n >= 1 && n <= 114) fetchSurah(n);
+    }
+
+    // وظائف الأذكار
+    function openAzkarMenu() { showView('azkar-menu', 'اختر الأذكار'); }
+
+    function startAzkar(type) {
+        activeAzkarList = allAzkar[type];
+        zIndex = 0;
+        zCount = 0;
+        showView('azkar-active', 'الأذكار');
+        updateZikrDisplay();
+    }
+
+    function updateZikrDisplay() {
+        const item = activeAzkarList[zIndex];
+        document.getElementById('azkar-text').innerText = item.t;
+        document.getElementById('zikr-target').innerText = `التكرار المطلوب: ${item.c}`;
+        document.getElementById('zikr-count').innerText = zCount;
+    }
+
+    function countZikr() {
+        if(zCount < activeAzkarList[zIndex].c) {
+            zCount++;
+            document.getElementById('zikr-count').innerText = zCount;
+            if(zCount == activeAzkarList[zIndex].c) {
+                if (window.navigator.vibrate) window.navigator.vibrate(100);
+            }
+        }
+    }
+
+    function nextZikr() {
+        if(zIndex < activeAzkarList.length - 1) {
+            zIndex++; zCount = 0; updateZikrDisplay();
+        } else {
+            alert("تقبل الله منك!"); showMain();
+        }
+    }
+
+    // التنقل
+    function showView(id, title) {
+        document.getElementById('main-menu').style.display = 'none';
+        document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        document.getElementById('top-title').innerText = title;
+        document.getElementById('masterBack').style.display = 'block';
+    }
+
+    function showMain() {
+        document.getElementById('main-menu').style.display = 'block';
+        document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
+        document.getElementById('top-title').innerText = "موقع سَكينة";
+        document.getElementById('masterBack').style.display = 'none';
+    }
+</script>
+</body>
+</html>
